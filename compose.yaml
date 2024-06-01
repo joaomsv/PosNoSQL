@@ -1,0 +1,39 @@
+networks:
+  mongoLojas:
+    driver: bridge
+
+services:
+  mongo-config1:
+    image: mongo
+    container_name: config1
+    networks:
+      - mongoLojas
+    command: ['mongod', '--configsvr', '--replSet', 'config-server', '--port', '27017']
+
+  mongo-config2:
+    image: mongo
+    container_name: config2
+    networks:
+      - mongoLojas
+    command: ['mongod', '--configsvr', '--replSet', 'config-server', '--port', '27017']
+
+  mongo-config3:
+    image: mongo
+    container_name: config3
+    networks:
+      - mongoLojas
+    command: ['mongod', '--configsvr', '--replSet', 'config-server', '--port', '27017']
+
+  config-srv-setup:
+    image: mongo
+    container_name: config-srv-setup
+    volumes:
+      - .\scripts:/scripts
+    depends_on:
+      - mongo-config1
+      - mongo-config2
+      - mongo-config3
+    networks:
+      - mongoLojas
+    restart: no
+    entrypoint: ['bash', './scripts/start-configdb.sh']
