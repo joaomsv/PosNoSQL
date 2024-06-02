@@ -66,6 +66,27 @@ services:
       - mongoLojas
     command: ['mongod', '--shardsvr', '--replSet', 'shard2', '--port', '27019']
 
+  mongo-shard3a:
+    image: mongo
+    container_name: shard3a
+    networks:
+      - mongoLojas
+    command: ['mongod', '--shardsvr', '--replSet', 'shard3', '--port', '27020']
+
+  mongo-shard3b:
+    image: mongo
+    container_name: shard3b
+    networks:
+      - mongoLojas
+    command: ['mongod', '--shardsvr', '--replSet', 'shard3', '--port', '27020']
+
+  mongo-shard3c:
+    image: mongo
+    container_name: shard3c
+    networks:
+      - mongoLojas
+    command: ['mongod', '--shardsvr', '--replSet', 'shard3', '--port', '27020']
+
   mongo-router1:
     image: mongo
     container_name: router1
@@ -76,6 +97,8 @@ services:
     depends_on:
       - config-srv-setup
       - shard1-setup
+      - shard2-setup
+      - shard3-setup
     command: ['mongos', '--port', '27017', '--configdb', 'config-server/config1:27017,config2:27017,config3:27017', '--bind_ip_all']
 
   config-srv-setup:
@@ -119,6 +142,20 @@ services:
       - mongoLojas
     restart: no
     entrypoint: ['bash', './scripts/start-shard2.sh']
+
+  shard3-setup:
+    image: mongo
+    container_name: shard3-setup
+    volumes:
+      - .\scripts:/scripts
+    depends_on:
+      - mongo-shard3a
+      - mongo-shard3b
+      - mongo-shard3c
+    networks:
+      - mongoLojas
+    restart: no
+    entrypoint: ['bash', './scripts/start-shard3.sh']
 
   router-setup:
     image: mongo

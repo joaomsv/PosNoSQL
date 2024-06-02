@@ -1,4 +1,4 @@
-sleep 30
+sleep 20
 
 mongosh --host router1:27017 <<EOF
 
@@ -8,4 +8,7 @@ mongosh --host router1:27017 <<EOF
     sh.addShard("shard2/shard2a:27019")
     sh.addShard("shard2/shard2b:27019")
     sh.addShard("shard2/shard2c:27019")
+    sh.addShard("shard3/shard3a:27020")
+    sh.addShard("shard3/shard3b:27020")
+    sh.addShard("shard3/shard3c:27020")
 EOF
