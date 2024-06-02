@@ -1,4 +1,4 @@
-sleep 20
+sleep 30
 
 mongosh --host router1:27017 <<EOF
 
