@@ -45,6 +45,18 @@ services:
       - mongoLojas
     command: ['mongod', '--shardsvr', '--replSet', 'shard1', '--port', '27018']
 
+  mongo-router1:
+    image: mongo
+    container_name: router1
+    networks:
+      - mongoLojas
+    ports:
+      - 27017:27017
+    depends_on:
+      - config-srv-setup
+      - shard1-setup
+    command: ['mongos', '--port', '27017', '--configdb', 'config-server/config1:27017,config2:27017,config3:27017', '--bind_ip_all']
+
   config-srv-setup:
     image: mongo
     container_name: config-srv-setup
@@ -72,3 +84,15 @@ services:
       - mongoLojas
     restart: no
     entrypoint: ['bash', './scripts/start-shard1.sh']
+
+  router-setup:
+    image: mongo
+    container_name: router-setup
+    volumes:
+      - .\scripts:/scripts
+    depends_on:
+      - mongo-router1
+    networks:
+      - mongoLojas
+    restart: no
+    entrypoint: ['bash', './scripts/start-router.sh']
