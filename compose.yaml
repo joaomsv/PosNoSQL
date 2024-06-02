@@ -45,6 +45,27 @@ services:
       - mongoLojas
     command: ['mongod', '--shardsvr', '--replSet', 'shard1', '--port', '27018']
 
+  mongo-shard2a:
+    image: mongo
+    container_name: shard2a
+    networks:
+      - mongoLojas
+    command: ['mongod', '--shardsvr', '--replSet', 'shard2', '--port', '27019']
+
+  mongo-shard2b:
+    image: mongo
+    container_name: shard2b
+    networks:
+      - mongoLojas
+    command: ['mongod', '--shardsvr', '--replSet', 'shard2', '--port', '27019']
+
+  mongo-shard2c:
+    image: mongo
+    container_name: shard2c
+    networks:
+      - mongoLojas
+    command: ['mongod', '--shardsvr', '--replSet', 'shard2', '--port', '27019']
+
   mongo-router1:
     image: mongo
     container_name: router1
@@ -84,6 +105,20 @@ services:
       - mongoLojas
     restart: no
     entrypoint: ['bash', './scripts/start-shard1.sh']
+
+  shard2-setup:
+    image: mongo
+    container_name: shard2-setup
+    volumes:
+      - .\scripts:/scripts
+    depends_on:
+      - mongo-shard2a
+      - mongo-shard2b
+      - mongo-shard2c
+    networks:
+      - mongoLojas
+    restart: no
+    entrypoint: ['bash', './scripts/start-shard2.sh']
 
   router-setup:
     image: mongo
