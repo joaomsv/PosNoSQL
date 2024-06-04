@@ -1,6 +1,8 @@
 from pymongo import MongoClient
 from random import randrange
+from faker import Faker
 
+fake = Faker('pt_BR')
 db = 'loja'
 col_estoque = 'estoque'
 col_filial = 'filial'
@@ -29,14 +31,24 @@ if mycol_fi.count_documents({}):
 
 client['admin'].command({'shardCollection': 'loja.filial', 'key': {'shard_key': 1}})
 for a in range(filiais):
-    mydocs.append({'_id': a + 1, 'nome': f'loja{a + 1}', 'shard_key': a})
+    mydocs.append({'_id': a + 1,
+                   'nome': fake.company(),
+                   'endereço': fake.address(),
+                   'gerente': fake.name(),
+                   'shard_key': a})
 x = mycol_fi.insert_many(mydocs)
 mydocs.clear()
 print(max(x.inserted_ids))
 
 for j in range(batch):
     for i in range(size):
-        mydocs.append({'_id': (size * j) + i + 1, 'produto': f'produto {i + 1}', 'valor': randrange(100), 'qtd': randrange(100), 'filial': randrange(filiais) + 1, 'shard_key': randrange(round(size/5)) + 1})
+        mydocs.append({
+            '_id': (size * j) + i + 1,
+            'produto': f'produto {i + 1}',
+            'valor': randrange(1, 100),
+            'qtd': randrange(100),
+            'filial_id': randrange(filiais) + 1,
+            'shard_key': randrange(round(size/5)) + 1})
     x = mycol_es.insert_many(mydocs)
     mydocs.clear()
 
