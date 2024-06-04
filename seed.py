@@ -30,7 +30,7 @@ for j in range(batch):
 
 # Define o shard key
 mycol.create_index({'shard_key': 'hashed'})
-client.admin.command({'shardCollection': 'loja.estoque', 'key': {'shard_key': 'hashed'}})
+client['admin'].command({'shardCollection': 'loja.estoque', 'key': {'shard_key': 'hashed'}})
 
 print(max(x.inserted_ids))
 client.close()
