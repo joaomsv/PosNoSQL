@@ -48,14 +48,6 @@ O config server contém os metadados e as configurações do cluster. Uma replic
 
 Para automatizar o processo de montagem do cluster foi utilizado docker compose. **Isto será feito em Windows para qualquer outra SO precisa trocar `\` para `/` no `compose.yaml`**
 
-#### Pre-requisitos
-
-- Docker
-  - Docker compose
-- Python
-  - pip
-- MongoDB Compass
-
 #### Network Setup
 
 Inicialmente precisamos criar uma rede para que todos os containers consigam se comunicar entre si.
@@ -97,11 +89,11 @@ mongo-config1:
     command: ['mongod', '--configsvr', '--replSet', 'config-server', '--port', '27017']
 ```
 
-Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --configsvr --replSet config-server --port 27017` será executado. Isto irá configurar a instancia `mongod`.
+Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --configsvr --replSet config-server --port 27017` será executado. Isto irá configurar a instância `mongod`.
 
 - `--configsvr`: Uma flag para configurar como config server
 - `--replSet config-server`: Coloca todos no mesmo replica set
-- `--port 27017`: Define o porto para 27017
+- `--port 27017`: Define o port para 27017
 
 ```yaml
 config-srv-setup:
@@ -133,7 +125,7 @@ Ele espera 5 segundos para que os outros containers acabem de inicializar e exec
 ```js
 rs.initiate(
    {
-      _id: "config-server",
+     _id: "config-server",
       configsvr: true,
       version: 1,
       members: [
@@ -150,6 +142,8 @@ Neste script ele inicializa o replica set do config server definindo todos os me
 #### Shard Setup
 
 ![Shard Setup Arquitetura](./imagens/arqShardsSetup.png 'Shard Setup Arquitetura')
+
+Agora vamos criar os 3 shards que irão armazenar os dados. Precisamos configurar cada um individualmente mas, a configuração para cada é similar alterando somente os nomes e ports.
 
 ##### Shard1
 
@@ -176,6 +170,12 @@ mongo-shard1a:
     command: ['mongod', '--shardsvr', '--replSet', 'shard1', '--port', '27018']
 ```
 
+Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard1 --port 27018` será executado. Isto irá configurar a instância `mongod`.
+
+- `--shardsvr`: Uma flag para configurar como shard
+- `--replSet shard1`: Coloca todos no mesmo replica set
+- `--port 27018`: Define o port para 27018
+
 ```yaml
 shard1-setup:
     image: mongo
@@ -191,6 +191,33 @@ shard1-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-shard1.sh']
 ```
+
+Em sequência temos que criar um container para finalizar a inicialização do shard1. Ele aguarda a inicialização de `mongo-shard1a,  mongo-shard1b, mongo-shard1c` e executa o script `start-shard1.sh`.
+
+```bash
+sleep 5
+mongosh --host shard1a:27018 <<EOF
+    load('./scripts/shard1-setup.js')
+EOF
+```
+
+Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `shard1a` com `mongosh --host shard1a:27018` e irá executar `shard1-setup.js`.
+
+```js
+rs.initiate(
+    {
+       _id: "shard1",
+       version: 1,
+       members: [
+          { _id: 0, host : "shard1a:27018", priority: 2},
+          { _id: 1, host : "shard1b:27018", priority: 1},
+          { _id: 2, host : "shard1c:27018", priority: 0}
+       ]
+    }
+)
+```
+
+Neste script ele inicializa o replica set do shard1 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
 
 ##### Shard2
 
@@ -217,6 +244,12 @@ mongo-shard2a:
     command: ['mongod', '--shardsvr', '--replSet', 'shard2', '--port', '27019']
 ```
 
+Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard2 --port 27019` será executado. Isto irá configurar a instância `mongod`.
+
+- `--shardsvr`: Uma flag para configurar como shard
+- `--replSet shard2`: Coloca todos no mesmo replica set
+- `--port 27019`: Define o port para 27019
+
 ```yaml
 shard2-setup:
     image: mongo
@@ -232,6 +265,33 @@ shard2-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-shard2.sh']
 ```
+
+Em sequência temos que criar um container para finalizar a inicialização do shard2. Ele aguarda a inicialização de `mongo-shard2a,  mongo-shard2b, mongo-shard2c` e executa o script `start-shard2.sh`.
+
+```bash
+sleep 5
+mongosh --host shard2a:27019 <<EOF
+    load('./scripts/shard2-setup.js')
+EOF
+```
+
+Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `shard2a` com `mongosh --host shard2a:27019` e irá executar `shard2-setup.js`.
+
+```js
+rs.initiate(
+    {
+       _id: "shard2",
+       version: 1,
+       members: [
+          { _id: 0, host : "shard2a:27019", priority: 2},
+          { _id: 1, host : "shard2b:27019", priority: 1},
+          { _id: 2, host : "shard2c:27019", priority: 0}
+       ]
+    }
+)
+```
+
+Neste script ele inicializa o replica set do shard2 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
 
 ##### Shard3
 
@@ -258,6 +318,12 @@ mongo-shard3a:
     command: ['mongod', '--shardsvr', '--replSet', 'shard3', '--port', '27020']
 ```
 
+Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard3 --port 27020` será executado. Isto irá configurar a instância `mongod`.
+
+- `--shardsvr`: Uma flag para configurar como shard
+- `--replSet shard3`: Coloca todos no mesmo replica set
+- `--port 27020`: Define o port para 27020
+
 ```yaml
 shard3-setup:
     image: mongo
@@ -273,6 +339,33 @@ shard3-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-shard3.sh']
 ```
+
+Em sequência temos que criar um container para finalizar a inicialização do shard3. Ele aguarda a inicialização de `mongo-shard3a,  mongo-shard3b, mongo-shard3c` e executa o script `start-shard3.sh`.
+
+```bash
+sleep 5
+mongosh --host shard3a:27020 <<EOF
+    load('./scripts/shard3-setup.js')
+EOF
+```
+
+Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `shard3a` com `mongosh --host shard3a:27020` e irá executar `shard3-setup.js`.
+
+```js
+rs.initiate(
+    {
+       _id: "shard3",
+       version: 1,
+       members: [
+          { _id: 0, host : "shard3a:27020", priority: 2},
+          { _id: 1, host : "shard3b:27020", priority: 1},
+          { _id: 2, host : "shard3c:27020", priority: 0}
+       ]
+    }
+)
+```
+
+Neste script ele inicializa o replica set do shard3 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
 
 #### Router Setup
 
@@ -307,6 +400,14 @@ router-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-router.sh']
 ```
+
+#### Pre-requisitos
+
+- Docker
+  - Docker compose
+- Python
+  - pip
+- MongoDB Compass
 
 #### Como Executar
 
