@@ -192,7 +192,7 @@ shard1-setup:
     entrypoint: ['bash', './scripts/start-shard1.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do shard1. Ele aguarda a inicialização de `mongo-shard1a,  mongo-shard1b, mongo-shard1c` e executa o script `start-shard1.sh`.
+Em sequência temos que criar um container para finalizar a inicialização do shard1. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard1a,  mongo-shard1b, mongo-shard1c` e executa o script `start-shard1.sh`.
 
 ```bash
 sleep 5
@@ -217,7 +217,7 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do shard1 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
+Neste script ele inicializa o replica set do shard1 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa o container para.
 
 ##### Shard2
 
@@ -266,7 +266,7 @@ shard2-setup:
     entrypoint: ['bash', './scripts/start-shard2.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do shard2. Ele aguarda a inicialização de `mongo-shard2a,  mongo-shard2b, mongo-shard2c` e executa o script `start-shard2.sh`.
+Em sequência temos que criar um container para finalizar a inicialização do shard2. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard2a,  mongo-shard2b, mongo-shard2c` e executa o script `start-shard2.sh`.
 
 ```bash
 sleep 5
@@ -291,7 +291,7 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do shard2 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
+Neste script ele inicializa o replica set do shard2 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa o container para.
 
 ##### Shard3
 
@@ -340,7 +340,7 @@ shard3-setup:
     entrypoint: ['bash', './scripts/start-shard3.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do shard3. Ele aguarda a inicialização de `mongo-shard3a,  mongo-shard3b, mongo-shard3c` e executa o script `start-shard3.sh`.
+Em sequência temos que criar um container para finalizar a inicialização do shard3. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard3a,  mongo-shard3b, mongo-shard3c` e executa o script `start-shard3.sh`.
 
 ```bash
 sleep 5
@@ -365,11 +365,13 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do shard3 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
+Neste script ele inicializa o replica set do shard3 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa o container para.
 
 #### Router Setup
 
 ![Router Setup Arquitecture](./imagens/arqRouterSetup.png 'Router Setup Arquitecture')
+
+O passo final é criar o router para cuidar das requisições da aplicação.
 
 ```yaml
 mongo-router1:
@@ -387,6 +389,12 @@ mongo-router1:
     command: ['mongos', '--port', '27017', '--configdb', 'config-server/config1:27017,config2:27017,config3:27017', '--bind_ip_all']
 ```
 
+O passo final é criar o router para cuidar das requisições da aplicação. Criamos um container com a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Sendo o último passo ele tem que esperar inicializar os containers anteriores, `config-srv-setup, shard1-setup, shard2-setup, shard3-setup`, para inicializar. Quando finalizar a inicialização o seguinte comando será executado para configurar o `mongos`, `mongos --port 27017 --configdb config-server/config1:27017,config2:27017,config3:27017 --bind_ip_all'`
+
+- `--port 27017`: Define o port como 27017.
+- `--configdb config-server/config1:27017,config2:27017,config3:27017`: Define qual é config server.
+- `--bind_ip_all`: Vai juntar todos os ips em um só.
+
 ```yaml
 router-setup:
     image: mongo
@@ -400,6 +408,25 @@ router-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-router.sh']
 ```
+
+Agora falta adicionar os shards do cluster, para isso temos que fazer o setup do router. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Aguardamos o `mongo-router1` acabar a inicialização e executar o script `start-router.sh`.
+
+```bash
+sleep 30
+mongosh --host router1:27017 <<EOF
+    sh.addShard("shard1/shard1a:27018")
+    sh.addShard("shard1/shard1b:27018")
+    sh.addShard("shard1/shard1c:27018")
+    sh.addShard("shard2/shard2a:27019")
+    sh.addShard("shard2/shard2b:27019")
+    sh.addShard("shard2/shard2c:27019")
+    sh.addShard("shard3/shard3a:27020")
+    sh.addShard("shard3/shard3b:27020")
+    sh.addShard("shard3/shard3c:27020")
+EOF
+```
+
+Aguardamos 30 segundos para os outros containers finalizarem a inicialização e acessamos o router usando `mongosh --host router1:27017`. Cada shard\subshard deve ser adicionado individualmente.
 
 #### Pre-requisitos
 
