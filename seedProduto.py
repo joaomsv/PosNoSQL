@@ -5,11 +5,11 @@ from faker import Faker
 fake = Faker('pt_BR')
 db = 'loja'
 col = 'estoque'
-filiais = 500000
+filiais = 100000
 # Tamanho do batch de docs que deseja ter
-size = 500000
+size = 100000
 # Quantos batches deseja
-batch = 1
+batch = 5
 MONGODB_URI = 'mongodb://localhost:27017/'
 client = MongoClient(MONGODB_URI)
 
@@ -24,7 +24,6 @@ mydocs = []
 if mycol.count_documents({}):
     mycol.drop()
 
-print('Seeding Produtos...')
 for j in range(batch):
     for i in range(size):
         mydocs.append({
@@ -34,6 +33,7 @@ for j in range(batch):
             'qtd': randrange(100),
             'filial_id': randrange(filiais) + 1,
             'shard_key': randrange(round(size/5)) + 1})
+    print(f'Seeding Produtos batch {j + 1}...')
     x = mycol.insert_many(mydocs)
     mydocs.clear()
 
@@ -43,4 +43,4 @@ client['admin'].command({'shardCollection': 'loja.estoque', 'key': {'shard_key':
 
 client.close()
 print(f'Quantidade de produtos: {max(x.inserted_ids)}')
-print(max('Seeding Completed!!!'))
+print('Seeding Completed!!!')
