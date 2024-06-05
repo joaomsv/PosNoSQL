@@ -22,7 +22,7 @@ Com base nos requisitos, podemos concluir que os aspectos do Teorema do CAP que 
 
 Sendo assim, com a indicação do professor e os requisitos, MongoDB foi escolhido para este trabalho.
 
-![Arquitura MongoDB Cluster](imagens\arqMongoCluster.png)
+![Arquitura MongoDB Cluster](imagens\arqMongoCluster.png 'Arquitura MongoDB Cluster')
 
 Essa arquitetura foi baseado no artigo [Criando um cluster MongoDB com ReplicaSet e Sharding com Docker](https://gustavo-leitao.medium.com/criando-um-cluster-mongodb-com-replicaset-e-sharding-com-docker-9cb19d456b56)
 
@@ -64,7 +64,7 @@ networks:
 
 #### Config Server Setup
 
-![Config Server Setup Arquitetura](imagens\arqConfigSrvSetup.png)
+![Config Server Setup Arquitetura](imagens\arqConfigSrvSetup.png 'Config Server Setup Arquitetura')
 
 ```yaml
 mongo-config1:
@@ -107,7 +107,7 @@ config-srv-setup:
 
 #### Shard Setup
 
-![Shard Setup Arquitetura](imagens\arqShardsSetup.png)
+![Shard Setup Arquitetura](imagens\arqShardsSetup.png 'Shard Setup Arquitetura')
 
 ##### Shard1
 
@@ -234,7 +234,7 @@ shard3-setup:
 
 #### Router Setup
 
-![Router Setup Arquitecture](imagens\arqRouterSetup.png)
+![Router Setup Arquitecture](imagens\arqRouterSetup.png 'Router Setup Arquitecture')
 
 ```yaml
 mongo-router1:
