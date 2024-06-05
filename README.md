@@ -54,7 +54,7 @@ Para automatizar o processo de montagem do cluster foi utilizado docker compose.
   - Docker compose
 - Python
   - pip
-- Um interface para MongoDB(MongoDB Compass)
+- MongoDB Compass
 
 #### Network Setup
 
@@ -71,6 +71,8 @@ Através disto a nossa rede `mongoLojas` foi criada.
 #### Config Server Setup
 
 ![Config Server Setup Arquitetura](./imagens/arqConfigSrvSetup.png 'Config Server Setup Arquitetura')
+
+Consigamos ver pela imagem que vamos precisar de 4 containers para criar um config server.
 
 ```yaml
 mongo-config1:
@@ -95,6 +97,12 @@ mongo-config1:
     command: ['mongod', '--configsvr', '--replSet', 'config-server', '--port', '27017']
 ```
 
+Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --configsvr --replSet config-server --port 27017` será executado. Isto irá configurar a instancia `mongod`.
+
+- `--configsvr`: Uma flag para configurar como config server
+- `--replSet config-server`: Coloca todos no mesmo replica set
+- `--port 27017`: Define o porto para 27017
+
 ```yaml
 config-srv-setup:
     image: mongo
@@ -110,6 +118,34 @@ config-srv-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-configdb.sh']
 ```
+
+Em sequência temos que criar um container para finalizar a inicialização do config server. Ele aguarda a inicialização de `mongo-config1,  mongo-config2, mongo-config3` e executa o script `start-configdb.sh`.
+
+```bash
+sleep 5
+mongosh --host config1:27017 <<EOF
+    load('./scripts/config-setup.js')
+EOF
+```
+
+Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `config1` com `mongosh --host config1:27017` e irá executar `config-setup.js`.
+
+```js
+rs.initiate(
+   {
+      _id: "config-server",
+      configsvr: true,
+      version: 1,
+      members: [
+         { _id: 0, host : "config1:27017", priority: 2},
+         { _id: 1, host : "config2:27017", priority: 1},
+         { _id: 2, host : "config3:27017", priority: 0}
+      ]
+   }
+)
+```
+
+Neste script ele inicializa o replica set do config server definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
 
 #### Shard Setup
 
