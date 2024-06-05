@@ -53,6 +53,7 @@ Para automatizar o processo de montagem do cluster foi utilizado docker compose.
 - Docker
   - Docker compose
 - Python
+- Um interface para MongoDB(MongoDB Compass)
 
 #### Network Setup
 
@@ -265,6 +266,21 @@ router-setup:
     restart: no
     entrypoint: ['bash', './scripts/start-router.sh']
 ```
+
+#### Como Executar
+
+Para executar segue os seguintes passos:
+
+1. Abre o terminal clona o repositorio
+   `git clone https://github.com/joaomsv/PosNoSQL.git`
+2. Executa o docker compose
+   `docker compose up -d`
+3. Instala as dependencias
+   `pip install -r requirements.txt`
+4. Aguarda 30 segundos e executa o script para criar e alimentar os bancos
+   `py .\seed.py`
+5. Acessa o cluster usando o link
+   `mongodb://localhost:27017/`
 
 ### Testes
 
