@@ -46,7 +46,7 @@ O config server contém os metadados e as configurações do cluster. Uma replic
 
 ### Implementação
 
-Para automatizar o processo de montagem do cluster foi utilizado docker compose. **Isto será feito em Windows para qualquer outra SO precisa trocar `\` para `/` no `compose.yaml`**
+Para automatizar o processo de montagem do cluster foi utilizado docker compose. ***Isto será feito em Windows para qualquer outra SO precisa trocar `\` para `/` no `compose.yaml`***
 
 #### Network Setup
 
