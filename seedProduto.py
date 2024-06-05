@@ -4,8 +4,7 @@ from faker import Faker
 
 fake = Faker('pt_BR')
 db = 'loja'
-col_estoque = 'estoque'
-col_filial = 'filial'
+col = 'estoque'
 filiais = 500000
 # Tamanho do batch de docs que deseja ter
 size = 500000
@@ -18,28 +17,14 @@ client = MongoClient(MONGODB_URI)
 client['config']['settings'].update_one({ '_id': "chunksize" }, { '$set': { '_id': "chunksize", 'value': 5 } }, upsert=True)
 
 mydb = client[db]
-mycol_es = mydb[col_estoque]
-mycol_fi = mydb[col_filial]
+mycol = mydb[col]
 mydocs = []
 
 # Sempre começar com uma coleção novo
-if mycol_es.count_documents({}):
-    mycol_es.drop()
+if mycol.count_documents({}):
+    mycol.drop()
 
-if mycol_fi.count_documents({}):
-    mycol_fi.drop()
-
-client['admin'].command({'shardCollection': 'loja.filial', 'key': {'shard_key': 1}})
-for a in range(filiais):
-    mydocs.append({'_id': a + 1,
-                   'nome': fake.company(),
-                   'endereço': fake.address(),
-                   'gerente': fake.name(),
-                   'shard_key': a})
-x = mycol_fi.insert_many(mydocs)
-mydocs.clear()
-print(max(x.inserted_ids))
-
+print('Seeding Produtos...')
 for j in range(batch):
     for i in range(size):
         mydocs.append({
@@ -49,12 +34,13 @@ for j in range(batch):
             'qtd': randrange(100),
             'filial_id': randrange(filiais) + 1,
             'shard_key': randrange(round(size/5)) + 1})
-    x = mycol_es.insert_many(mydocs)
+    x = mycol.insert_many(mydocs)
     mydocs.clear()
 
 # Define o shard key
-mycol_es.create_index({'shard_key': 'hashed'})
+mycol.create_index({'shard_key': 'hashed'})
 client['admin'].command({'shardCollection': 'loja.estoque', 'key': {'shard_key': 'hashed'}})
 
-print(max(x.inserted_ids))
 client.close()
+print(f'Quantidade de produtos: {max(x.inserted_ids)}')
+print(max('Seeding Completed!!!'))
