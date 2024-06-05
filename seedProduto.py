@@ -5,7 +5,6 @@ from faker import Faker
 fake = Faker('pt_BR')
 db = 'loja'
 col = 'estoque'
-filiais = 100000
 # Tamanho do batch de docs que deseja ter
 size = 100000
 # Quantos batches deseja
@@ -20,6 +19,9 @@ mydb = client[db]
 mycol = mydb[col]
 mydocs = []
 
+filiais = mydb['filial'].count_documents({})
+if not filiais:
+    filiais = 100
 # Sempre começar com uma coleção novo
 if mycol.count_documents({}):
     mycol.drop()
