@@ -46,22 +46,27 @@ O config server contém os metadados e as configurações do cluster. Uma replic
 
 ### Implementação
 
-Para automatizar o processo de montagem do cluster foi utilizado docker compose.
+Para automatizar o processo de montagem do cluster foi utilizado docker compose. **Isto será feito em Windows para qualquer outra SO precisa trocar `\` para `/` no `compose.yaml`**
 
 #### Pre-requisitos
 
 - Docker
   - Docker compose
 - Python
+  - pip
 - Um interface para MongoDB(MongoDB Compass)
 
 #### Network Setup
+
+Inicialmente precisamos criar uma rede para que todos os containers consigam se comunicar entre si.
 
 ```yaml
 networks:
   mongoLojas:
     driver: bridge
 ```
+
+Através disto a nossa rede `mongoLojas` foi criada.
 
 #### Config Server Setup
 
@@ -273,13 +278,15 @@ Para executar segue os seguintes passos:
 
 1. Abre o terminal clona o repositorio
    `git clone https://github.com/joaomsv/PosNoSQL.git`
-2. Executa o docker compose
+2. Execute o docker compose
    `docker compose up -d`
-3. Instala as dependencias
+3. Instale as dependencias
    `pip install -r requirements.txt`
-4. Aguarda 30 segundos e executa o script para criar e alimentar os bancos
-   `py .\seed.py`
-5. Acessa o cluster usando o link
+4. Aguarde 30 segundos
+5. Execute o script para criar e alimentar os bancos
+    - Windows: `py .\seed.py`
+    - Outros: `python3 ./seed.py`
+6. Acesse o cluster usando o link
    `mongodb://localhost:27017/`
 
 ### Testes
