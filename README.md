@@ -495,6 +495,6 @@ Foi atualizado 1k produtos, adicionando e removendo uma quantidade do estoque de
 
 Foi adicionado 1k de novos filiais.
 
-### Recommendações Finais
+### Consideração Final
 
-Um caso extremamente interessante para um trabalho, mesmo sendo um POC ainda requer muita otimização. Para isso precisa de mais estudo de como melhorar a particionamento de dados e otimização dos recursos.
+Um caso extremamente interessante para um trabalho, mesmo sendo um POC ainda requer muita otimização. Para isso precisa de mais estudo de como melhorar a particionamento de dados e otimização de performance.
