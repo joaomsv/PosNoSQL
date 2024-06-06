@@ -9,7 +9,7 @@ filiais = mydb['filial'].count_documents({})
 print('Test beginning...')
 
 for _ in range(1000):
-    x = mydb['produto'].count_documents({'filial': randrange(filiais) + 1, 'valor': {'$gte': randrange(100)}})
+    x = mydb['estoque'].count_documents({'filial': randrange(filiais) + 1, 'valor': {'$gte': randrange(100)}})
 
 print('Test end!!!')
 client.close()

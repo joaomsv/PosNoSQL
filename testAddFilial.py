@@ -18,7 +18,7 @@ for i in range(filiais, new_filial):
                    'endereço': fake.address(),
                    'gerente': fake.name(),
                    'shard_key': i})
-mydb['produto'].insert_many(mydocs)
+mydb['filial'].insert_many(mydocs)
 mydocs.clear()
 
 print('Test end!!!')
