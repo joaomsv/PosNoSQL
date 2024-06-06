@@ -9,7 +9,7 @@ produtos = mydb['estoque'].count_documents({})
 print('Test beginning...')
 
 for i in range(1000):
-    mydb['estoque'].update_one({ '_id': produtos + 1 },
+    mydb['estoque'].update_one({ '_id': randrange(produtos) + 1 },
                   {'$set': {'qtd': randrange(1000)}})
 
 print('Test end!!!')
