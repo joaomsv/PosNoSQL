@@ -455,4 +455,28 @@ Para executar segue os seguintes passos:
 
 ### Testes
 
+#### Seeding Filiais
+
+![Performance Teste Dos Insert de Filial](./imagens/filialInsert.png 'Performance Teste Dos Insert de Filial')
+
+Injetando 100k de filial resultou nesses gráficos, foi feito um limitação de `chunksize` de 5 e usando um ranged shard key no `shard_key` definido antes do insert.
+
+#### Seeding Produtos
+
+![Performance Teste Dos Insert de Produto](./imagens/produtoInsert.png 'Performance Teste Dos Insert de Produto')
+
+Injeção de 5 batches de 100k de produto resultou nesses gráficos, foi feito um limitação de `chunksize` de 5 e usando um hashed shard key no `shard_key` definido após o insert.
+
+#### Teste Consulta de Produtos
+
+![Teste Consulta de Produtos](./imagens/testFindProdutos.png 'Teste Consulta de Produtos')
+
+#### Teste Update de Inventario
+
+![Teste Update de Inventario](./imagens/testUpdateProduto.png 'Teste Update de Inventario')
+
+#### Teste Add Novos Filiais
+
+![Teste Add Novos Filiais](./imagens/testAddFilial.png 'Teste Add Novos Filiais')
+
 ### Recommendações Finais
