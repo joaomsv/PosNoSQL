@@ -17,40 +17,29 @@ Imagine que você está projetando um sistema de gerenciamento de estoque para u
 
 Com base nos requisitos, podemos concluir que os aspectos do Teorema do CAP que temos que garantir são:
 
-- Consistência: Ao consultar o banco os dados dos produtos em qualquer filial a qualquer momento os dados exibidos deverão ser os mesmos.
+- Consistência: Ao consultar o banco, os dados dos produtos em qualquer filial a qualquer momento, os dados exibidos deverão ser os mesmos.
 - Tolerância à Partição: O sistema deve funcionar mesmo se alguma falha ocorrer em qual nó do cluster.
 
-Sendo assim, com a indicação do professor e os requisitos, MongoDB foi escolhido para este trabalho.
+Sendo assim, com a indicação do professor e os requisitos, o MongoDB foi escolhido para este trabalho.
 
 ![Arquitura MongoDB Cluster](./imagens/arqMongoCluster.png 'Arquitura MongoDB Cluster')
 
-Essa arquitetura foi baseado no artigo [Criando um cluster MongoDB com ReplicaSet e Sharding com Docker](https://gustavo-leitao.medium.com/criando-um-cluster-mongodb-com-replicaset-e-sharding-com-docker-9cb19d456b56)
+Essa arquitetura foi baseada no artigo  [Criando um cluster MongoDB com ReplicaSet e Sharding com Docker](https://gustavo-leitao.medium.com/criando-um-cluster-mongodb-com-replicaset-e-sharding-com-docker-9cb19d456b56)
 
-O que precisamos saber são o seguinte:
+O que precisamos saber são os seguintes:
 
-#### Replica Set
-
-Um agrupamento de serviços para garantir a replicação e segurança contra falhas dos bancos.
-
-#### Router
-
-O router é uma instância de `mongos` que será a interface entre o cliente e o cluster. Caso necessário, pode criar uma replica set para melhorar a segurança contra falha.
-
-#### Shard
-
-Um shard ou fragmento, é onde os dados são armazenados. Sendo que existem 3 shards na minha arquitetura os dados devem ser divididos em chunks ou pedaços e distribuído entre eles. Os shards são feitos de uma replica set de 3 instâncias de `mongod` onde 1 é o primário e o resto secundários. Caso o primário falhar um dos secundários devia assumir como o novo primário.
-
-#### Config Server
-
-O config server contém os metadados e as configurações do cluster. Uma replica set de 3 instâncias de `mongod`, caso o primário falhar um dos secundários assume como primário.
+- Replica Set: Um agrupamento de serviços para garantir a replicação e segurança contra falhas dos bancos.
+- Router: O router é uma instância de `mongos` que será a interface entre o cliente e o cluster. Caso necessário, pode-se criar uma replica set para melhorar a segurança contra falhas.
+- Shard: Um shard ou fragmento, é onde os dados são armazenados. Sendo que existem 3 shards na minha arquitetura, os dados devem ser divididos em chunks ou pedaços e distribuídos entre eles. Os shards são feitos de uma replica set de 3 instâncias de `mongod`, onde 1 é o primário e o resto secundários. Caso o primário falhe, um dos secundários deve assumir como o novo primário.
+- Config Server: O config server contém os metadados e as configurações do cluster. Uma replica set de 3 instâncias de `mongod`, caso o primário falhe, um dos secundários assume como primário.
 
 ### Implementação
 
-Para automatizar o processo de montagem do cluster foi utilizado docker compose. ***Isto será feito em Windows para qualquer outra SO precisa trocar `\` para `/` no `compose.yaml`***
+Para automatizar o processo de montagem do cluster, foi utilizado o Docker Compose. ***Isso será feito em Windows, para qualquer outro sistema operacional, é necessário trocar `\` por `/` no arquivo `compose.yaml`.***
 
-#### Network Setup
+#### Configuração de Rede
 
-Inicialmente precisamos criar uma rede para que todos os containers consigam se comunicar entre si.
+Inicialmente, precisamos criar uma rede para que todos os containers consigam se comunicar entre si.
 
 ```yaml
 networks:
@@ -58,13 +47,13 @@ networks:
     driver: bridge
 ```
 
-Através disto a nossa rede `mongoLojas` foi criada.
+Através disso, nossa rede `mongoLojas` foi criada.
 
 #### Config Server Setup
 
 ![Config Server Setup Arquitetura](./imagens/arqConfigSrvSetup.png 'Config Server Setup Arquitetura')
 
-Consigamos ver pela imagem que vamos precisar de 4 containers para criar um config server.
+Podemos ver pela imagem que vamos precisar de 4 containers para criar um config server.
 
 ```yaml
 mongo-config1:
@@ -89,7 +78,7 @@ mongo-config1:
     command: ['mongod', '--configsvr', '--replSet', 'config-server', '--port', '27017']
 ```
 
-Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --configsvr --replSet config-server --port 27017` será executado. Isto irá configurar a instância `mongod`.
+Aqui, criamos 3 containers usando a imagem do MongoDB e os colocamos na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --configsvr --replSet config-server --port 27017` será executado. Isso irá configurar a instância `mongod`.
 
 - `--configsvr`: Uma flag para configurar como config server
 - `--replSet config-server`: Coloca todos no mesmo replica set
@@ -111,7 +100,7 @@ config-srv-setup:
     entrypoint: ['bash', './scripts/start-configdb.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do config server. Ele aguarda a inicialização de `mongo-config1,  mongo-config2, mongo-config3` e executa o script `start-configdb.sh`.
+Em sequência, temos que criar um container para finalizar a inicialização do config server. Ele aguarda a inicialização de `mongo-config1, mongo-config2, mongo-config3` e executa o script `start-configdb.sh`.
 
 ```bash
 sleep 5
@@ -120,7 +109,7 @@ mongosh --host config1:27017 <<EOF
 EOF
 ```
 
-Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `config1` com `mongosh --host config1:27017` e irá executar `config-setup.js`.
+Ele espera 5 segundos para que os outros containers terminem de inicializar e executar o comando. Primeiramente, vai acessar o `mongosh` do primeiro container `config1` com `mongosh --host config1:27017` e irá executar `config-setup.js`.
 
 ```js
 rs.initiate(
@@ -137,13 +126,13 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do config server definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
+Neste script, ele inicializa o replica set do config server definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário.
 
 #### Shard Setup
 
 ![Shard Setup Arquitetura](./imagens/arqShardsSetup.png 'Shard Setup Arquitetura')
 
-Agora vamos criar os 3 shards que irão armazenar os dados. Precisamos configurar cada um individualmente mas, a configuração para cada é similar alterando somente os nomes e ports.
+Agora vamos criar os 3 shards que irão armazenar os dados. Precisamos configurar cada um individualmente, mas a configuração para cada é similar, alterando somente os nomes e ports.
 
 ##### Shard1
 
@@ -170,7 +159,7 @@ mongo-shard1a:
     command: ['mongod', '--shardsvr', '--replSet', 'shard1', '--port', '27018']
 ```
 
-Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard1 --port 27018` será executado. Isto irá configurar a instância `mongod`.
+Aqui, criamos 3 containers usando a imagem `mongo` e os colocamos na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard1 --port 27018` será executado. Isso irá configurar a instância `mongod`.
 
 - `--shardsvr`: Uma flag para configurar como shard
 - `--replSet shard1`: Coloca todos no mesmo replica set
@@ -192,7 +181,7 @@ shard1-setup:
     entrypoint: ['bash', './scripts/start-shard1.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do shard1. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard1a,  mongo-shard1b, mongo-shard1c` e executa o script `start-shard1.sh`.
+Em sequência, temos que criar um container para finalizar a inicialização do shard1. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `scripts` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard1a, mongo-shard1b, mongo-shard1c` e executa o script `start-shard1.sh`.
 
 ```bash
 sleep 5
@@ -201,7 +190,7 @@ mongosh --host shard1a:27018 <<EOF
 EOF
 ```
 
-Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `shard1a` com `mongosh --host shard1a:27018` e irá executar `shard1-setup.js`.
+Ele espera 5 segundos para que os outros containers terminem de inicializar e executar o comando. Primeiramente, vai acessar o `mongosh` do primeiro container `shard1a` com `mongosh --host shard1a:27018` e irá executar `shard1-setup.js`.
 
 ```js
 rs.initiate(
@@ -217,7 +206,7 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do shard1 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa o container para.
+Neste script, ele inicializa o replica set do shard1 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa, o container para.
 
 ##### Shard2
 
@@ -244,7 +233,7 @@ mongo-shard2a:
     command: ['mongod', '--shardsvr', '--replSet', 'shard2', '--port', '27019']
 ```
 
-Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard2 --port 27019` será executado. Isto irá configurar a instância `mongod`.
+Aqui, criamos 3 containers usando a imagem `mongo` e os colocamos na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard2 --port 27019` será executado. Isso irá configurar a instância `mongod`.
 
 - `--shardsvr`: Uma flag para configurar como shard
 - `--replSet shard2`: Coloca todos no mesmo replica set
@@ -266,7 +255,7 @@ shard2-setup:
     entrypoint: ['bash', './scripts/start-shard2.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do shard2. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard2a,  mongo-shard2b, mongo-shard2c` e executa o script `start-shard2.sh`.
+Em sequência, temos que criar um container para finalizar a inicialização do shard2. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `scripts` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard2a, mongo-shard2b, mongo-shard2c` e executa o script `start-shard2.sh`.
 
 ```bash
 sleep 5
@@ -275,7 +264,7 @@ mongosh --host shard2a:27019 <<EOF
 EOF
 ```
 
-Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `shard2a` com `mongosh --host shard2a:27019` e irá executar `shard2-setup.js`.
+Ele espera 5 segundos para que os outros containers terminem de inicializar e executar o comando. Primeiramente, vai acessar o `mongosh` do primeiro container `shard2a` com `mongosh --host shard2a:27019` e irá executar `shard2-setup.js`.
 
 ```js
 rs.initiate(
@@ -291,7 +280,7 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do shard2 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa o container para.
+Neste script, ele inicializa o replica set do shard2 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa, o container para.
 
 ##### Shard3
 
@@ -318,7 +307,7 @@ mongo-shard3a:
     command: ['mongod', '--shardsvr', '--replSet', 'shard3', '--port', '27020']
 ```
 
-Aqui criamos 3 containers usando a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard3 --port 27020` será executado. Isto irá configurar a instância `mongod`.
+Aqui, criamos 3 containers usando a imagem `mongo` e os colocamos na mesma rede `mongoLojas`. Assim que os containers foram iniciados, o comando `mongod --shardsvr --replSet shard3 --port 27020` será executado. Isso irá configurar a instância `mongod`.
 
 - `--shardsvr`: Uma flag para configurar como shard
 - `--replSet shard3`: Coloca todos no mesmo replica set
@@ -340,7 +329,7 @@ shard3-setup:
     entrypoint: ['bash', './scripts/start-shard3.sh']
 ```
 
-Em sequência temos que criar um container para finalizar a inicialização do shard3. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Ele aguarda a inicialização de `mongo-shard3a,  mongo-shard3b, mongo-shard3c` e executa o script `start-shard3.sh`.
+Em sequência, temos que criar um container para finalizar a inicialização do shard3. Precisamos colocá-lo na mesma rede `mongoLojas` e mapear a pasta de `scripts` para poder usá-los depois. Ele aguarda a inicialização de `mongo-shard3a, mongo-shard3b, mongo-shard3c` e executa o script `start-shard3.sh`.
 
 ```bash
 sleep 5
@@ -349,7 +338,7 @@ mongosh --host shard3a:27020 <<EOF
 EOF
 ```
 
-Ele espera 5 segundos para que os outros containers acabem de inicializar e executar o comando. Primeiramente vai acessar o `mongosh` do primeiro container `shard3a` com `mongosh --host shard3a:27020` e irá executar `shard3-setup.js`.
+Ele espera 5 segundos para que os outros containers terminem de inicializar e executar o comando. Primeiramente, vai acessar o `mongosh` do primeiro container `shard3a` com `mongosh --host shard3a:27020` e irá executar `shard3-setup.js`.
 
 ```js
 rs.initiate(
@@ -365,13 +354,11 @@ rs.initiate(
 )
 ```
 
-Neste script ele inicializa o replica set do shard3 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa o container para.
+Neste script, ele inicializa o replica set do shard3 definindo todos os membros e as prioridades para quem deve ser o primário, sendo quanto maior o número maior a chance de ser o primário. Assim que ele finaliza a tarefa, o container para.
 
 #### Router Setup
 
 ![Router Setup Arquitecture](./imagens/arqRouterSetup.png 'Router Setup Arquitecture')
-
-O passo final é criar o router para cuidar das requisições da aplicação.
 
 ```yaml
 mongo-router1:
@@ -389,7 +376,7 @@ mongo-router1:
     command: ['mongos', '--port', '27017', '--configdb', 'config-server/config1:27017,config2:27017,config3:27017', '--bind_ip_all']
 ```
 
-O passo final é criar o router para cuidar das requisições da aplicação. Criamos um container com a imagem `mongo` e colocamos eles na mesma rede `mongoLojas`. Sendo o último passo ele tem que esperar inicializar os containers anteriores, `config-srv-setup, shard1-setup, shard2-setup, shard3-setup`, para inicializar. Quando finalizar a inicialização o seguinte comando será executado para configurar o `mongos`, `mongos --port 27017 --configdb config-server/config1:27017,config2:27017,config3:27017 --bind_ip_all'`
+O passo final é criar o router para cuidar das requisições da aplicação. Criamos um container com a imagem `mongo` e o colocamos na mesma rede `mongoLojas`. Sendo o último passo, ele tem que esperar a inicialização dos containers anteriores, `config-srv-setup, shard1-setup, shard2-setup, shard3-setup`, para iniciar. Quando finalizar a inicialização, o seguinte comando será executado para configurar o `mongos`, `mongos --port 27017 --configdb config-server/config1:27017,config2:27017,config3:27017 --bind_ip_all'`
 
 - `--port 27017`: Define o port como 27017.
 - `--configdb config-server/config1:27017,config2:27017,config3:27017`: Define qual é config server.
@@ -409,7 +396,7 @@ router-setup:
     entrypoint: ['bash', './scripts/start-router.sh']
 ```
 
-Agora falta adicionar os shards do cluster, para isso temos que fazer o setup do router. Precisamos colocar na mesma rede `mongoLojas` e mapear a pasta `script` para poder usar os scripts depois. Aguardamos o `mongo-router1` acabar a inicialização e executar o script `start-router.sh`.
+Agora falta adicionar os shards do cluster. Para isso, temos que fazer o setup do router. Precisamos colocá-lo na mesma rede `mongoLojas` e mapear a pasta de `scripts` para poder usá-los depois. Aguardamos o `mongo-router1` terminar a inicialização e executar o script `start-router.sh`.
 
 ```bash
 sleep 30
@@ -426,14 +413,13 @@ mongosh --host router1:27017 <<EOF
 EOF
 ```
 
-Aguardamos 30 segundos para os outros containers finalizarem a inicialização e acessamos o router usando `mongosh --host router1:27017`. Cada shard\subshard deve ser adicionado individualmente.
+Esperamos 30 segundos para que os outros containers terminem a inicialização e acessamos o router usando `mongosh --host router1:27017`. Cada shard\subshard deve ser adicionado individualmente.
 
 #### Banco
 
-Baseado nos requisitos podemos extrair 2 coleções importantes, filial e estoque. Filial contém os dados de todos os filais da rede de lojas e o estoque contém todos os dados dos produtos.
-Cada produto tem uma ligação para uma única filial.
+Baseado nos requisitos, podemos extrair 2 coleções importantes: `filial` e `estoque`. Filial contém os dados de todas as filiais da rede de lojas, e o estoque contém todos os dados dos produtos. Cada produto tem uma ligação com uma única filial.
 
-Para o particionamento de dados cada coleção tem uma estratégia diferente. O banco filial contém uma shard key incremental similar a um id, então foi aplicado estratégia `ranged` antes da primeira injeção de dados. O banco estoque a shard key foi feito através de uma estratégia `hashed` para garantir um particionamento mais igualitário. Ao definir a chave antes da primeira injeção vemos que a performance caia muito sendo que além de inserir o documento ele já fazia o balanceamento, para não perder em performance a chave foi definida depois de inserir os dados. Somente definindo os `shard key` não foi o suficiente para garantir o particionamento, sendo que a quantidade de dados que a máquina local permitia era menor do padrão mínimo do mongo então tinha que definir o `chunksize` também. Somente após definindo esses 2 dados que o mongo começou a fazer o particionamento de dados. As estratégias podem ser vistas nos arquivos seed:
+Para o particionamento de dados, cada coleção tem uma estratégia diferente. No banco "filial", a shard key é incremental, similar a um id, então foi aplicada uma estratégia `ranged` antes da primeira injeção de dados. No banco "estoque", a shard key foi feita através de uma estratégia `hashed` para garantir um particionamento mais igualitário. Ao definir a chave antes da primeira injeção, vimos que a performance caía muito, já que além de inserir o documento, ele também fazia o balanceamento. Para não perder em performance, a chave foi definida depois de inserir os dados. Somente definir a `shard key` não foi suficiente para garantir o particionamento, já que a quantidade de dados que a máquina local permitia era menor do que o padrão mínimo do MongoDB, então tivemos que definir o `chunksize` também. Somente após definir esses 2 dados que o MongoDB começou a fazer o particionamento de dados. As estratégias podem ser vistas nos arquivos seed:
 
 - [Seed Filial](./seedFilial.py)
 - [Seed Estoque](./seedProduto.py)
@@ -497,4 +483,4 @@ Foi adicionado 1k de novos filiais.
 
 ### Consideração Final
 
-Um caso extremamente interessante para um trabalho, mesmo sendo um POC ainda requer muita otimização. Para isso precisa de mais estudo de como melhorar a particionamento de dados e otimização de performance.
+Um caso extremamente interessante para um trabalho, mesmo sendo um POC, ainda requer muita otimização. Para isso, precisa de mais estudo sobre como melhorar o particionamento de dados e otimização de performance.
