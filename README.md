@@ -428,6 +428,16 @@ EOF
 
 Aguardamos 30 segundos para os outros containers finalizarem a inicialização e acessamos o router usando `mongosh --host router1:27017`. Cada shard\subshard deve ser adicionado individualmente.
 
+#### Banco
+
+Baseado nos requisitos podemos extrair 2 coleções importantes, filial e estoque. Filial contém os dados de todos os filais da rede de lojas e o estoque contém todos os dados dos produtos.
+Cada produto tem uma ligação para uma única filial.
+
+Para o particionamento de dados cada coleção tem uma estratégia diferente. O banco filial contém uma shard key incremental similar a um id, então foi aplicado estratégia `ranged` antes da primeira injeção de dados. O banco estoque a shard key foi feito através de uma estratégia `hashed` para garantir um particionamento mais igualitário. Ao definir a chave antes da primeira injeção vemos que a performance caia muito sendo que além de inserir o documento ele já fazia o balanceamento, para não perder em performance a chave foi definida depois de inserir os dados. Somente definindo os `shard key` não foi o suficiente para garantir o particionamento, sendo que a quantidade de dados que a máquina local permitia era menor do padrão mínimo do mongo então tinha que definir o `chunksize` também. Somente após definindo esses 2 dados que o mongo começou a fazer o particionamento de dados. As estratégias podem ser vistas nos arquivos seed:
+
+- [Seed Filial](./seedFilial.py)
+- [Seed Estoque](./seedProduto.py)
+
 #### Pre-requisitos
 
 - Docker
@@ -448,9 +458,9 @@ Para executar segue os seguintes passos:
    `pip install -r requirements.txt`
 4. Aguarde 30 segundos
 5. Execute o script para criar e alimentar os bancos
-    - Windows: `py .\seed.py`
-    - Outros: `python3 ./seed.py`
-6. Acesse o cluster usando o link
+    - Windows: `py .\seedFilial.py` e `py .\seedProduto.py`
+    - Outros: `python3 ./seedFilial.py` e `python3 ./seedProduto.py`
+6. Abre o MongoDb Compass e acesse o cluster usando o link
    `mongodb://localhost:27017/`
 
 ### Testes
@@ -471,12 +481,20 @@ Injeção de 5 batches de 100k de produto resultou nesses gráficos, foi feito u
 
 ![Teste Consulta de Produtos](./imagens/testFindProdutos.png 'Teste Consulta de Produtos')
 
+Foi feito 1k consultas na coleção de produtos, olhando diferentes valores e filiais.
+
 #### Teste Update de Inventario
 
 ![Teste Update de Inventario](./imagens/testUpdateProduto.png 'Teste Update de Inventario')
+
+Foi atualizado 1k produtos, adicionando e removendo uma quantidade do estoque de cada.
 
 #### Teste Add Novos Filiais
 
 ![Teste Add Novos Filiais](./imagens/testAddFilial.png 'Teste Add Novos Filiais')
 
+Foi adicionado 1k de novos filiais.
+
 ### Recommendações Finais
+
+Um caso extremamente interessante para um trabalho, mesmo sendo um POC ainda requer muita otimização. Para isso precisa de mais estudo de como melhorar a particionamento de dados e otimização dos recursos.
